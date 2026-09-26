@@ -35,7 +35,7 @@ class MassDMBot(commands.Bot):
         print(f"SUCCESS: Logged in as {self.user} (ID: {self.user.id})")
         print("==========================================")
         
-        # Updated Rich Presence Status: Listening to Anna The Nuker
+        # Rich Presence Status: Listening to Anna The Nuker
         activity = discord.Activity(
             type=discord.ActivityType.listening,
             name="Anna The Nuker"
@@ -45,23 +45,26 @@ class MassDMBot(commands.Bot):
 
 bot = MassDMBot()
 
-@bot.tree.command(name="dmall", description="Send a direct message to all members in the server (Owner Only).")
+@bot.tree.command(name="dmall", description="Send a direct message to all members in the server (Owner & Admins Only).")
 @app_commands.describe(
     message="The normal text message to send to all server members.",
     delay="Delay between each message in seconds (default: 3 seconds)."
 )
 async def dmall(interaction: discord.Interaction, message: str, delay: float = 3.0):
-    # Strict Owner Check
-    if interaction.user.id != interaction.guild.owner_id:
+    # Check: User must be Server Owner OR have Administrator Permission
+    is_owner = interaction.user.id == interaction.guild.owner_id
+    is_admin = interaction.user.guild_permissions.administrator
+
+    if not (is_owner or is_admin):
         embed = discord.Embed(
             title="⛔ Access Denied",
-            description="Only the **Server Owner** can use this command.",
+            description="Only the **Server Owner** or members with **Administrator** permission can use this command.",
             color=discord.Color.red()
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
 
-    # Acknowledge command privately to owner
+    # Acknowledge command privately
     await interaction.response.defer(ephemeral=True)
 
     guild = interaction.guild
@@ -92,7 +95,7 @@ async def dmall(interaction: discord.Interaction, message: str, delay: float = 3
 
         await asyncio.sleep(delay)
 
-    # Final Summary Embed for Owner
+    # Final Summary Embed
     summary_embed = discord.Embed(
         title="✅ Mass DM Operation Completed",
         color=discord.Color.green()
