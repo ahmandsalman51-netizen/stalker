@@ -31,26 +31,27 @@ class MassDMBot(commands.Bot):
         print("--> SLASH COMMANDS SYNCED SUCCESSFULLY!")
 
     async def on_ready(self):
-        print(f"==========================================")
+        print("==========================================")
         print(f"SUCCESS: Logged in as {self.user} (ID: {self.user.id})")
-        print(f"==========================================")
+        print("==========================================")
         
-        # Set custom Rich Presence / Bot Status showing "/dmall"
+        # Updated Rich Presence Status: Listening to Anna The Nuker
         activity = discord.Activity(
             type=discord.ActivityType.listening,
-            name="/dmall"
+            name="Anna The Nuker"
         )
         await self.change_presence(status=discord.Status.online, activity=activity)
-        print("--> STATUS UPDATED TO: Listening to /dmall")
+        print("--> STATUS UPDATED TO: Listening to Anna The Nuker")
 
 bot = MassDMBot()
 
 @bot.tree.command(name="dmall", description="Send a direct message to all members in the server (Owner Only).")
 @app_commands.describe(
-    message="The message content to send to all server members.",
+    message="The normal text message to send to all server members.",
     delay="Delay between each message in seconds (default: 3 seconds)."
 )
 async def dmall(interaction: discord.Interaction, message: str, delay: float = 3.0):
+    # Strict Owner Check
     if interaction.user.id != interaction.guild.owner_id:
         embed = discord.Embed(
             title="⛔ Access Denied",
@@ -60,6 +61,7 @@ async def dmall(interaction: discord.Interaction, message: str, delay: float = 3
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
 
+    # Acknowledge command privately to owner
     await interaction.response.defer(ephemeral=True)
 
     guild = interaction.guild
@@ -67,7 +69,7 @@ async def dmall(interaction: discord.Interaction, message: str, delay: float = 3
     total_members = len(members)
 
     init_embed = discord.Embed(
-        title="📢 Mass Direct Message Operation Initiated",
+        title="📢 Mass Direct Message Operation Started",
         description=f"Sending message to **{total_members}** members with a delay of **{delay}s** per user.",
         color=discord.Color.blue()
     )
@@ -78,26 +80,19 @@ async def dmall(interaction: discord.Interaction, message: str, delay: float = 3
     successful = 0
     failed = 0
 
-    dm_embed = discord.Embed(
-        title=f"Message from {guild.name}",
-        description=message,
-        color=discord.Color.gold()
-    )
-    if guild.icon:
-        dm_embed.set_thumbnail(url=guild.icon.url)
-    dm_embed.set_footer(text=f"Sent via {bot.user.name} | Server Owner Announcement")
-
     for member in members:
         try:
-            await member.send(embed=dm_embed)
+            # Plain normal text message (No Embed)
+            await member.send(message)
             successful += 1
-            print(f"Sent DM to {member}")
+            print(f"Sent normal DM to {member}")
         except Exception as e:
             failed += 1
             print(f"Failed to send DM to {member}: {e}")
 
         await asyncio.sleep(delay)
 
+    # Final Summary Embed for Owner
     summary_embed = discord.Embed(
         title="✅ Mass DM Operation Completed",
         color=discord.Color.green()
