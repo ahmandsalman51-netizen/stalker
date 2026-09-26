@@ -26,31 +26,31 @@ class MassDMBot(commands.Bot):
         )
 
     async def setup_hook(self):
-        # Sync slash commands globally across all servers
-        logger.info("Syncing slash commands...")
+        print("--> SYNCING SLASH COMMANDS...")
         await self.tree.sync()
-        logger.info("Slash commands synced successfully.")
+        print("--> SLASH COMMANDS SYNCED SUCCESSFULLY!")
 
     async def on_ready(self):
-        logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
+        print(f"==========================================")
+        print(f"SUCCESS: Logged in as {self.user} (ID: {self.user.id})")
+        print(f"==========================================")
         
         # Set custom Rich Presence / Bot Status showing "/dmall"
         activity = discord.Activity(
-            type=discord.ActivityType.listening, # e.g. "Listening to /dmall"
+            type=discord.ActivityType.listening,
             name="/dmall"
         )
         await self.change_presence(status=discord.Status.online, activity=activity)
-        logger.info("Bot status updated to: Listening to /dmall")
+        print("--> STATUS UPDATED TO: Listening to /dmall")
 
 bot = MassDMBot()
 
 @bot.tree.command(name="dmall", description="Send a direct message to all members in the server (Owner Only).")
 @app_commands.describe(
     message="The message content to send to all server members.",
-    delay="Delay between each message in seconds (default: 3 seconds to avoid rate limits)."
+    delay="Delay between each message in seconds (default: 3 seconds)."
 )
 async def dmall(interaction: discord.Interaction, message: str, delay: float = 3.0):
-    # Strict Owner Check
     if interaction.user.id != interaction.guild.owner_id:
         embed = discord.Embed(
             title="⛔ Access Denied",
@@ -60,14 +60,12 @@ async def dmall(interaction: discord.Interaction, message: str, delay: float = 3
         await interaction.response.send_message(embed=embed, ephemeral=True)
         return
 
-    # Acknowledge the command immediately to avoid timeout
     await interaction.response.defer(ephemeral=True)
 
     guild = interaction.guild
     members = [m for m in guild.members if not m.bot]
     total_members = len(members)
 
-    # Initial Progress Embed
     init_embed = discord.Embed(
         title="📢 Mass Direct Message Operation Initiated",
         description=f"Sending message to **{total_members}** members with a delay of **{delay}s** per user.",
@@ -80,7 +78,6 @@ async def dmall(interaction: discord.Interaction, message: str, delay: float = 3
     successful = 0
     failed = 0
 
-    # User-facing DM Embed Template
     dm_embed = discord.Embed(
         title=f"Message from {guild.name}",
         description=message,
@@ -94,21 +91,13 @@ async def dmall(interaction: discord.Interaction, message: str, delay: float = 3
         try:
             await member.send(embed=dm_embed)
             successful += 1
-            logger.info(f"Successfully delivered DM to {member} ({member.id})")
-        except discord.Forbidden:
-            failed += 1
-            logger.warning(f"Failed to DM {member} ({member.id}): DMs closed or bot blocked.")
-        except discord.HTTPException as e:
-            failed += 1
-            logger.error(f"HTTP error sending to {member} ({member.id}): {e}")
+            print(f"Sent DM to {member}")
         except Exception as e:
             failed += 1
-            logger.error(f"Unexpected error sending to {member} ({member.id}): {e}")
+            print(f"Failed to send DM to {member}: {e}")
 
-        # Rate Limit / Anti-Ban Delay
         await asyncio.sleep(delay)
 
-    # Final Summary Embed
     summary_embed = discord.Embed(
         title="✅ Mass DM Operation Completed",
         color=discord.Color.green()
@@ -120,6 +109,10 @@ async def dmall(interaction: discord.Interaction, message: str, delay: float = 3
     await interaction.followup.send(embed=summary_embed, ephemeral=True)
 
 if __name__ == "__main__":
+    print("--> BOT STARTING UP...")
     token = os.getenv("DISCORD_TOKEN")
     if not token:
-        logger.critical("DISCORD_TOKEN environment variable is not set!")
+        print("CRITICAL ERROR: DISCORD_TOKEN IS MISSING!")
+        exit(1)
+    
+    bot.run(token)
